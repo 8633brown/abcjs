@@ -1,18 +1,3 @@
-//    Copyright (C) 2009-2020 Gregory Dyke (gregdyke at gmail dot com) Paul Rosen (paul at paulrosen dot net)
-//
-//    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-//    documentation files (the "Software"), to deal in the Software without restriction, including without limitation
-//    the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
-//    to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-//
-//    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-//
-//    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
-//    BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-//    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-//    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 var spacing = require('./abc_spacing');
 
 /**
@@ -115,6 +100,8 @@ var spacing = require('./abc_spacing');
 	glyphs['noteheads.slash.quarter'] = {d:[['M',9,-6],['l',0,4],['l',-9,9],['l',0,-4],['z']],w:9,h:9};
 
 	glyphs['noteheads.harmonic.quarter'] = {d:[['M',3.63,-4.02],['c',0.09,-0.06,0.18,-0.09,0.24,-0.03],['c',0.03,0.03,0.87,0.93,1.83,2.01],['c',1.50,1.65,1.80,1.98,1.80,2.04],['c',0.00,0.06,-0.30,0.39,-1.80,2.04],['c',-0.96,1.08,-1.80,1.98,-1.83,2.01],['c',-0.06,0.06,-0.15,0.03,-0.24,-0.03],['c',-0.12,-0.09,-3.54,-3.84,-3.60,-3.93],['c',-0.03,-0.03,-0.03,-0.09,-0.03,-0.15],['c',0.03,-0.06,3.45,-3.84,3.63,-3.96],['z']],w:7.5,h:8.165};
+
+glyphs['noteheads.triangle.quarter'] = {d:[['M',0,0],['l',9,0],['l',-4.5,-9],['z']],w:9,h:9};
 
 var pathClone = function (pathArray) {
 	var res = [];

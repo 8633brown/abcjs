@@ -1,18 +1,4 @@
 // abc_abstract_engraver.js: Creates a data structure suitable for printing a line of abc
-// Copyright (C) 2010-2020 Gregory Dyke (gregdyke at gmail dot com)
-//
-//    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-//    documentation files (the "Software"), to deal in the Software without restriction, including without limitation
-//    the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
-//    to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-//
-//    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-//
-//    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
-//    BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-//    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-//    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 var AbsoluteElement = require('./abc_absolute_element');
 var BeamElem = require('./abc_beam_element');
@@ -32,6 +18,7 @@ var TieElem = require('./abc_tie_element');
 var TripletElem = require('./abc_triplet_element');
 var VoiceElement = require('./abc_voice_element');
 var addChord = require('./add-chord');
+var pitchesToPerc = require('../synth/pitches-to-perc')
 
 var parseCommon = require('../parse/abc_common');
 
@@ -51,6 +38,7 @@ var hint = false;
 		rhythm:{"-1": "noteheads.slash.whole", 0:"noteheads.slash.whole", 1:"noteheads.slash.whole", 2:"noteheads.slash.quarter", 3:"noteheads.slash.quarter", 4:"noteheads.slash.quarter", 5:"noteheads.slash.quarter", 6:"noteheads.slash.quarter", 7:"noteheads.slash.quarter", nostem: "noteheads.slash.nostem"},
 		x:{"-1": "noteheads.indeterminate", 0:"noteheads.indeterminate", 1:"noteheads.indeterminate", 2:"noteheads.indeterminate", 3:"noteheads.indeterminate", 4:"noteheads.indeterminate", 5:"noteheads.indeterminate", 6:"noteheads.indeterminate", 7:"noteheads.indeterminate", nostem: "noteheads.indeterminate"},
 		harmonic:{"-1": "noteheads.harmonic.quarter", 0:"noteheads.harmonic.quarter", 1:"noteheads.harmonic.quarter", 2:"noteheads.harmonic.quarter", 3:"noteheads.harmonic.quarter", 4:"noteheads.harmonic.quarter", 5:"noteheads.harmonic.quarter", 6:"noteheads.harmonic.quarter", 7:"noteheads.harmonic.quarter", nostem: "noteheads.harmonic.quarter"},
+		triangle:{"-1": "noteheads.triangle.quarter", 0:"noteheads.triangle.quarter", 1:"noteheads.triangle.quarter", 2:"noteheads.triangle.quarter", 3:"noteheads.triangle.quarter", 4:"noteheads.triangle.quarter", 5:"noteheads.triangle.quarter", 6:"noteheads.triangle.quarter", 7:"noteheads.triangle.quarter", nostem: "noteheads.triangle.quarter"},
 		uflags:{3:"flags.u8th", 4:"flags.u16th", 5:"flags.u32nd", 6:"flags.u64th"},
 		dflags:{3:"flags.d8th", 4:"flags.d16th", 5:"flags.d32nd", 6:"flags.d64th"}
 	};
@@ -62,6 +50,7 @@ var AbstractEngraver = function(getTextSize, tuneNumber, options) {
 	this.isBagpipes = options.bagpipes;
 	this.flatBeams = options.flatbeams;
 	this.graceSlurs = options.graceSlurs;
+	this.percmap = options.percmap;
 	this.reset();
 };
 
@@ -155,6 +144,8 @@ AbstractEngraver.prototype.createABCStaff = function(staffgroup, abcstaff, tempo
     	voice.header=abcstaff.title[v].replace(/\\n/g, "\n");
     	voice.headerPosition = 6 + staffgroup.getTextSize.baselineToCenter(voice.header, "voicefont", 'staff-extra voice-name', v, abcstaff.voices.length)/spacing.STEP;
 	}
+    if (abcstaff.clef && abcstaff.clef.type === "perc")
+    	voice.isPercussion = true;
 	  var clef = createClef(abcstaff.clef, this.tuneNumber);
 	  if (clef) {
 		  if (v ===0 && abcstaff.barNumber) {
@@ -339,7 +330,7 @@ AbstractEngraver.prototype.createABCElement = function(isFirstStaff, isSingleLin
     if (voice.duplicate && elemset.length > 0) elemset[0].invisible = true;
     break;
   case "stem":
-    this.stemdir=elem.direction;
+    this.stemdir=elem.direction === "auto" ? undefined : elem.direction;
     break;
   case "part":
     var abselem = new AbsoluteElement(elem,0,0, 'part', this.tuneNumber);
@@ -475,7 +466,8 @@ var ledgerLines = function(abselem, minPitch, maxPitch, isRest, symbolWidth, add
 
 			flag = (gracebeam) ? null : chartable.uflags[(isBagpipes) ? 5 : 3];
 			var accidentalSlot = [];
-			var ret = createNoteHead(abselem, "noteheads.quarter", elem.gracenotes[i], "up", -graceoffsets[i], -graceoffsets[i], flag, 0, 0, gracescale*this.voiceScale, accidentalSlot, false);
+			var ret = createNoteHead(abselem, "noteheads.quarter", elem.gracenotes[i],
+				{dir: "up", headx: -graceoffsets[i], extrax: -graceoffsets[i], flag: flag, scale: gracescale*this.voiceScale, accidentalSlot: accidentalSlot});
 			ret.notehead.highestVert = ret.notehead.pitch + stemHeight;
 			var grace = ret.notehead;
 			this.addSlursAndTies(abselem, elem.gracenotes[i], grace, voice, "up", true);
@@ -561,6 +553,7 @@ var ledgerLines = function(abselem, minPitch, maxPitch, isRest, symbolWidth, add
 				elem.maxpitch = restpitch;
 				break;
 			case "invisible":
+			case "invisible-multimeasure":
 			case "spacer":
 				c = "";
 				elem.averagepitch = restpitch;
@@ -574,12 +567,13 @@ var ledgerLines = function(abselem, minPitch, maxPitch, isRest, symbolWidth, add
 				elem.maxpitch = restpitch;
 				dot = 0;
 				var mmWidth = glyphs.getSymbolWidth(c);
-				abselem.addHead(new RelativeElement(c, -mmWidth, mmWidth * 2, 7));
-				var numMeasures = new RelativeElement("" + elem.rest.text, 0, mmWidth, 16, {type: "multimeasure-text"});
+				abselem.addHead(new RelativeElement(c, mmWidth, mmWidth * 2, 7));
+				var numMeasures = new RelativeElement("" + elem.rest.text, mmWidth, mmWidth, 16, {type: "multimeasure-text"});
 				abselem.addExtra(numMeasures);
 		}
-		if (elem.rest.type !== "multimeasure") {
-			var ret = createNoteHead(abselem, c, {verticalPos: restpitch}, null, 0, 0, null, dot, 0, voiceScale, [], false);
+		if (elem.rest.type.indexOf("multimeasure") < 0) {
+			var ret = createNoteHead(abselem, c, {verticalPos: restpitch},
+				{ dot: dot, scale: voiceScale});
 			noteHead = ret.notehead;
 			if (noteHead) {
 				abselem.addHead(noteHead);
@@ -659,6 +653,13 @@ var ledgerLines = function(abselem, minPitch, maxPitch, isRest, symbolWidth, add
 			var c;
 			if (elem.pitches[p].style) { // There is a style for the whole group of pitches, but there could also be an override for a particular pitch.
 				c = chartable[elem.pitches[p].style][-durlog];
+			} else if (voice.isPercussion && this.percmap) {
+				c = noteSymbol;
+				var percHead = this.percmap[pitchesToPerc(elem.pitches[p])];
+				if (percHead && percHead.noteHead) {
+					if (chartable[percHead.noteHead])
+						c = chartable[percHead.noteHead][-durlog];
+				}
 			} else
 				c = noteSymbol;
 			// The highest position for the sake of placing slurs is itself if the slur is internal. It is the highest position possible if the slur is for the whole chord.
@@ -692,7 +693,8 @@ var ledgerLines = function(abselem, minPitch, maxPitch, isRest, symbolWidth, add
 			}
 
 			var hasStem = !nostem && durlog<=-1;
-			var ret = createNoteHead(abselem, c, elem.pitches[p], dir, 0, -roomTaken, flag, dot, dotshiftx, this.voiceScale, accidentalSlot, !stemdir);
+			var ret = createNoteHead(abselem, c, elem.pitches[p],
+				{dir: dir, extrax: -roomTaken, flag: flag, dot: dot, dotshiftx: dotshiftx, scale: this.voiceScale, accidentalSlot: accidentalSlot, shouldExtendStem: !stemdir, printAccidentals: !voice.isPercussion});
 			symbolWidth = Math.max(glyphs.getSymbolWidth(c), symbolWidth);
 			abselem.extraw -= ret.extraLeft;
 			noteHead = ret.notehead;
@@ -767,13 +769,15 @@ AbstractEngraver.prototype.createNote = function(elem, nostem, isSingleLineStaff
 
   var durationForSpacing = duration * this.tripletmultiplier;
   if (elem.rest && elem.rest.type === 'multimeasure')
-  	durationForSpacing = duration;
+  	durationForSpacing = 1;
+  if (elem.rest && elem.rest.type === 'invisible-multimeasure')
+  	durationForSpacing = this.measureLength*elem.rest.text;
   var absType = elem.rest ? "rest" : "note";
   var abselem = new AbsoluteElement(elem, durationForSpacing, 1, absType, this.tuneNumber, { durationClassOveride: elem.duration * this.tripletmultiplier});
   if (hint) abselem.setHint();
 
   if (elem.rest) {
-  	if (this.measureLength === duration && elem.rest.type !== 'invisible' && elem.rest.type !== 'spacer' && elem.rest.type !== 'multimeasure')
+  	if (this.measureLength === duration && elem.rest.type !== 'invisible' && elem.rest.type !== 'spacer' && elem.rest.type.indexOf('multimeasure') < 0)
 	    elem.rest.type = 'whole'; // If the rest is exactly a measure, always use a whole rest
 	  var ret1 = addRestToAbsElement(abselem, elem, duration, dot, voice.voicetotal > 1, this.stemdir, isSingleLineStaff, durlog, this.voiceScale);
 	  notehead = ret1.noteHead;

@@ -1,18 +1,4 @@
 //    abc_tokenizer.js: tokenizes an ABC Music Notation string to support abc_parse.
-//    Copyright (C) 2010-2020 Paul Rosen (paul at paulrosen dot net)
-//
-//    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-//    documentation files (the "Software"), to deal in the Software without restriction, including without limitation
-//    the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
-//    to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-//
-//    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-//
-//    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
-//    BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-//    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-//    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 var parseCommon = require('./abc_common');
 
@@ -20,7 +6,10 @@ var parseCommon = require('./abc_common');
 // the return is the number of characters consumed, so 0 means that the element wasn't found.
 // also returned is the element found. This may be a different length because spaces may be consumed that aren't part of the string.
 // The return structure for most calls is { len: num_chars_consumed, token: str }
-var Tokenizer = function() {
+var Tokenizer = function(lines) {
+	this.lineIndex = 0
+	this.lines = lines
+
 	this.skipWhiteSpace = function(str) {
 		for (var i = 0; i < str.length; i++) {
 		  if (!this.isWhiteSpace(str.charAt(i)))
@@ -751,5 +740,14 @@ var Tokenizer = function() {
 		}
 	};
 };
+
+Tokenizer.prototype.nextLine = function() {
+	if (this.lineIndex < this.lines.length) {
+		var result = this.lines[this.lineIndex]
+		this.lineIndex++
+		return result
+	}
+	return null
+}
 
 module.exports = Tokenizer;

@@ -1,18 +1,3 @@
-//    Copyright (C) 2010-2020 Paul Rosen (paul at paulrosen dot net)
-//
-//    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-//    documentation files (the "Software"), to deal in the Software without restriction, including without limitation
-//    the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
-//    to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-//
-//    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-//
-//    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
-//    BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-//    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-//    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 var parseCommon = require('./abc_common');
 var parseDirective = require('./abc_parse_directive');
 var transpose = require('./abc_transpose');
@@ -380,6 +365,12 @@ var parseKeyVoice = {};
 		var tokens = tokenizer.tokenize(str, 0, str.length);
 		var ret = {};
 
+		// Be sure that a key was passed in
+		if (tokens.length === 0) {
+			warn("Must pass in key signature.", str, 0);
+			return ret;
+		}
+
 		// first the key
 		switch (tokens[0].token) {
 			case 'HP':
@@ -569,6 +560,7 @@ var parseKeyVoice = {};
 						case "harmonic":
 						case "rhythm":
 						case "x":
+						case "triangle":
 							multilineVars.style = tokens[0].token;
 							tokens.shift();
 							break;
@@ -885,10 +877,10 @@ var parseKeyVoice = {};
 							warn("Expected value for style in voice: " + attr.warn, line, start);
 						else if (attr.err !== undefined)
 							warn("Expected value for style in voice: " + attr.err, line, start);
-						else if (attr.token === 'normal' || attr.token === 'harmonic' || attr.token === 'rhythm' || attr.token === 'x')
+						else if (attr.token === 'normal' || attr.token === 'harmonic' || attr.token === 'rhythm' || attr.token === 'x' || attr.token === 'triangle')
 							multilineVars.voices[id].style = attr.token;
 						else
-							warn("Expected one of [normal, harmonic, rhythm, x] for voice style", line, start);
+							warn("Expected one of [normal, harmonic, rhythm, x, triangle] for voice style", line, start);
 						start += attr.len;
 						break;
 					// default:

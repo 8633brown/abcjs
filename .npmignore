@@ -1,11 +1,9 @@
 .idea/
 bin/
 build-utils/
-dist/
 docs/
 examples/
 font_generator/
-static-wrappers/
 tests/
 tmp/
 
@@ -15,5 +13,6 @@ tmp/
 deploy-docs.sh
 docker-compose.yml
 Dockerfile
-fix-versions.sh
+start-version.sh
 webpack.config.js
+to-*.sh

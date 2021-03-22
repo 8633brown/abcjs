@@ -1,18 +1,3 @@
-//    Copyright (C) 2010-2020 Paul Rosen (paul at paulrosen dot net)
-//
-//    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-//    documentation files (the "Software"), to deal in the Software without restriction, including without limitation
-//    the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
-//    to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-//
-//    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-//
-//    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
-//    BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-//    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-//    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 var parseCommon = require('./abc_common');
 
 var parseDirective = {};
@@ -351,6 +336,74 @@ var parseDirective = {};
 		tune.formatting.scale = num;
 
 	};
+	// starts at 35
+	var drumNames = [
+		"acoustic-bass-drum",
+		"bass-drum-1",
+		"side-stick",
+		"acoustic-snare",
+		"hand-clap",
+		"electric-snare",
+		"low-floor-tom",
+		"closed-hi-hat",
+		"high-floor-tom",
+		"pedal-hi-hat",
+		"low-tom",
+		"open-hi-hat",
+		"low-mid-tom",
+		"hi-mid-tom",
+		"crash-cymbal-1",
+		"high-tom",
+		"ride-cymbal-1",
+		"chinese-cymbal",
+		"ride-bell",
+		"tambourine",
+		"splash-cymbal",
+		"cowbell",
+		"crash-cymbal-2",
+		"vibraslap",
+		"ride-cymbal-2",
+		"hi-bongo",
+		"low-bongo",
+		"mute-hi-conga",
+		"open-hi-conga",
+		"low-conga",
+		"high-timbale",
+		"low-timbale",
+		"high-agogo",
+		"low-agogo",
+		"cabasa",
+		"maracas",
+		"short-whistle",
+		"long-whistle",
+		"short-guiro",
+		"long-guiro",
+		"claves",
+		"hi-wood-block",
+		"low-wood-block",
+		"mute-cuica",
+		"open-cuica",
+		"mute-triangle",
+		"open-triangle",
+	];
+
+	var interpretPercMap = function(restOfString) {
+		var tokens = restOfString.split(/\s+/); // Allow multiple spaces.
+		if (tokens.length !== 2 && tokens.length !== 3)
+			return { error: 'Expected parameters "abc-note", "drum-sound", and optionally "note-head"'}
+		var key = tokens[0];
+		// The percussion sound can either be a MIDI number or a drum name. If it is not a number then check for a name.
+		var pitch = parseInt(tokens[1], 10);
+		if ((isNaN(pitch) || pitch < 35 || pitch > 81) && tokens[1]) {
+			pitch = drumNames.indexOf(tokens[1].toLowerCase()) + 35;
+		}
+		if ((isNaN(pitch) || pitch < 35 || pitch > 81))
+			return { error: 'Expected drum name, received "' + tokens[1] + '"' };
+		var value = { sound: pitch };
+		if (tokens.length === 3)
+			value.noteHead = tokens[2];
+		return { key: key, value: value };
+	}
 
 	var getRequiredMeasurement = function(cmd, tokens) {
 		var points = tokenizer.getMeasurement(tokens);
@@ -1036,9 +1089,18 @@ var parseDirective = {};
 				else
 					parseMidiCommand(midi, tune, restOfString);
 				break;
+			case "percmap":
+				var percmap = interpretPercMap(restOfString);
+				if (percmap.error)
+					warn(percmap.error, str, 8);
+				else {
+					if (!tune.formatting.percmap)
+						tune.formatting.percmap = {};
+					tune.formatting.percmap[percmap.key] = percmap.value;
+				}
+				break;
 
 			case "map":
-			case "percmap":
 			case "playtempo":
 			case "auquality":
 			case "continuous":

@@ -1,18 +1,4 @@
 //    abc_parser_lint.js: Analyzes the output of abc_parse.
-//    Copyright (C) 2010-2020 Paul Rosen (paul at paulrosen dot net)
-//
-//    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-//    documentation files (the "Software"), to deal in the Software without restriction, including without limitation
-//    the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
-//    to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-//
-//    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-//
-//    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
-//    BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-//    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-//    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 //This file takes as input the output of AbcParser and analyzes it to make sure there are no
 //unexpected elements in it. It also returns a person-readable version of it that is suitable
@@ -112,6 +98,67 @@ var ParserLint = function() {
 		}
 	};
 
+	var percMapElement = {
+		type: 'object', optional: true, properties: {
+			sound: { type: 'number', minimum: 35, maximum: 81  },
+			noteHead: { type: 'string', Enum: ['normal', 'harmonic', 'rhythm', 'x', 'triangle'], optional: true },
+		}
+	};
+	var percMapProps = {
+		"C": percMapElement,
+		"_C": percMapElement,
+		"^C": percMapElement,
+		"=C": percMapElement,
+		"D": percMapElement,
+		"_D": percMapElement,
+		"^D": percMapElement,
+		"=D": percMapElement,
+		"E": percMapElement,
+		"_E": percMapElement,
+		"^E": percMapElement,
+		"=E": percMapElement,
+		"F": percMapElement,
+		"_F": percMapElement,
+		"^F": percMapElement,
+		"=F": percMapElement,
+		"G": percMapElement,
+		"_G": percMapElement,
+		"^G": percMapElement,
+		"=G": percMapElement,
+		"A": percMapElement,
+		"_A": percMapElement,
+		"^A": percMapElement,
+		"=A": percMapElement,
+		"B": percMapElement,
+		"_B": percMapElement,
+		"^B": percMapElement,
+		"=B": percMapElement,
+		"c": percMapElement,
+		"_c": percMapElement,
+		"^c": percMapElement,
+		"=c": percMapElement,
+		"d": percMapElement,
+		"_d": percMapElement,
+		"^d": percMapElement,
+		"=d": percMapElement,
+		"e": percMapElement,
+		"_e": percMapElement,
+		"^e": percMapElement,
+		"=e": percMapElement,
+		"f": percMapElement,
+		"_f": percMapElement,
+		"^f": percMapElement,
+		"=f": percMapElement,
+		"g": percMapElement,
+		"_g": percMapElement,
+		"^g": percMapElement,
+		"=g": percMapElement,
+		"a": percMapElement,
+		"_a": percMapElement,
+		"^a": percMapElement,
+		"=a": percMapElement,
+	};
+
 	var clefProperties = {
 		stafflines: { type: 'number', minimum: 0, maximum: 10, optional: true },
 		transpose: { type: 'number', minimum: -24, maximum: 24, optional: true },
@@ -186,7 +233,6 @@ var ParserLint = function() {
 				startBeam: { type: 'boolean', Enum: [ true ], prohibits: [ 'endBeam', 'beambr' ], optional: true },
 				startSlur: slurProperties,
 				startTie: tieProperties,
-				soundPitch: { type: 'number', optional: true }
 				}
 		}},
 		lyric: { type: 'array', optional: true, output: "noindex", items: {
@@ -205,8 +251,7 @@ var ParserLint = function() {
 					verticalPos: { type: 'number' },
 					startSlur: slurProperties,
 					startTie: tieProperties,
-					style: {	type: 'string', Enum: ['normal', 'harmonic', 'rhythm', 'x'], optional: true },
-					soundPitch: { type: 'number', optional: true }
+					style: {	type: 'string', Enum: ['normal', 'harmonic', 'rhythm', 'x', 'triangle'], optional: true },
 				}
 		}},
 		positioning: { type: 'object', optional: true, properties: {
@@ -217,7 +262,7 @@ var ParserLint = function() {
 			volumePosition: { type: 'string', Enum: [ 'above', 'below', 'hidden' ], optional: true}
 		}},
 		rest: { type: 'object',  optional: true, prohibits: [ 'pitches', 'lyric' ], properties: {
-			type: { type: 'string', Enum: [ 'invisible', 'spacer', 'rest', 'multimeasure', 'whole' ] },	// multimeasure requires duration to be the number of measures.
+			type: { type: 'string', Enum: [ 'invisible', 'spacer', 'rest', 'multimeasure', 'invisible-multimeasure', 'whole' ] },	// multimeasure requires duration to be the number of measures.
 			text: { type: 'number', minimum: 1, maximum: 100, optional: true },
 			endTie: { type: 'boolean', Enum: [ true ], optional: true },
 			startTie: tieProperties
@@ -227,7 +272,7 @@ var ParserLint = function() {
 		startTriplet: { type: 'number', minimum: 2, maximum: 9, optional: true },
 		tripletMultiplier: { type: 'number', minimum: .1, maximum: 9, optional: true },
 		stemConnectsToAbove: { type: 'boolean', Enum: [ true ], optional: true },
-		style: {	type: 'string', Enum: ['normal', 'harmonic', 'rhythm', 'x'], optional: true }
+		style: {	type: 'string', Enum: ['normal', 'harmonic', 'rhythm', 'x', 'triangle'], optional: true }
 };
 
 	var keyProperties = { // change deepCopyKey (in parse_header) if there are changes around here
@@ -297,7 +342,7 @@ var ParserLint = function() {
 				direction: { type: 'string', Enum: [ 'up', 'down', 'auto', 'none' ] }
 			}},
 			{ value: 'style', properties: {
-				head: { type: 'string', Enum: [ 'normal', 'harmonic', 'rhythm', 'x' ] }
+				head: { type: 'string', Enum: [ 'normal', 'harmonic', 'rhythm', 'x', 'triangle' ] }
 			}},
 			{ value: 'tempo', properties: appendPositioning(tempoProperties) },
 			{ value: 'transpose', properties: { steps: { type: "number" } } },
@@ -479,7 +524,7 @@ var ParserLint = function() {
 			partsbox: { type: "boolean", optional: true },
 			partsfont: fontType,
 			partsspace: { type: "number", optional: true },
-			percmap: { type: "string", optional: true },
+			percmap: {type: 'object', optional: true, properties: percMapProps},
 			playtempo: { type: "string", optional: true },
 			repeatfont: fontType,
 			rightmargin: { type: "number", optional: true },
