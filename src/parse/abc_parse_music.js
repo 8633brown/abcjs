@@ -114,10 +114,8 @@ MusicParser.prototype.parseMusic = function(line) {
 
 	// Start with the standard staff, clef and key symbols on each line
 	var delayStartNewLine = multilineVars.start_new_line;
-	if (multilineVars.continueall === undefined)
-		multilineVars.start_new_line = true;
-	else
-		multilineVars.start_new_line = false;
+	multilineVars.start_new_line = multilineVars.continueall === undefined;
+
 	var tripletNotesLeft = 0;
 
 	// See if the line starts with a header field
