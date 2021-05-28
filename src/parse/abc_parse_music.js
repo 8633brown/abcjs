@@ -87,18 +87,6 @@ var MusicParser = function(_tokenizer, _warn, _multilineVars, _tune, _tuneBuilde
 // back-tick, space, tab: space
 var nonDecorations = "ABCDEFGabcdefgxyzZ[]|^_{";	// use this to prescreen so we don't have to look for a decoration at every note.
 
-MusicParser.prototype.isInTie = function(overlayLevel, el) {
-	if (multilineVars.inTie[overlayLevel] === undefined)
-		return false;
-	// If this is single voice music then the voice index isn't set, so we use the first voice.
-	var voiceIndex = multilineVars.currentVoice ? multilineVars.currentVoice.index : 0;
-	if (multilineVars.inTie[overlayLevel][voiceIndex]) {
-		if (el.pitches !== undefined || el.rest.type !== 'spacer')
-			return true;
-	}
-	return false;
-};
-
 var el = new Element()
 MusicParser.prototype.parseMusic = function(line) {
 	header.resolveTempo();
@@ -582,6 +570,18 @@ MusicParser.prototype.parseMusic = function(line) {
 	}
 	this.lineContinuation = line.indexOf('\x12') >= 0 || (retHeader[0] > 0)
 	if (!this.lineContinuation) { el = new Element() }
+};
+
+MusicParser.prototype.isInTie = function(overlayLevel, el) {
+	if (multilineVars.inTie[overlayLevel] === undefined)
+		return false;
+	// If this is single voice music then the voice index isn't set, so we use the first voice.
+	var voiceIndex = multilineVars.currentVoice ? multilineVars.currentVoice.index : 0;
+	if (multilineVars.inTie[overlayLevel][voiceIndex]) {
+		if (el.pitches !== undefined || el.rest.type !== 'spacer')
+			return true;
+	}
+	return false;
 };
 
 MusicParser.prototype.setInTie = function(overlayLevel, value) {
