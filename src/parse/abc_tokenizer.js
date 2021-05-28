@@ -158,82 +158,57 @@ var Tokenizer = function(lines, multilineVars) {
 	// This returns one of the legal bar lines
 	// This is called alot and there is no obvious tokenable items, so this is broken apart.
 	this.getBarLine = function(line, i) {
-		switch (line.charAt(i)) {
-			case ']':
-				++i;
-				switch (line.charAt(i)) {
-					case '|': return {len: 2, token: "bar_thick_thin"};
-					case '[':
-						++i;
-						if ((line.charAt(i) >= '1' && line.charAt(i) <= '9') || line.charAt(i) === '"')
-							return {len: 2, token: "bar_invisible"};
-						return {len: 1, warn: "Unknown bar symbol"};
-					default:
-						return {len: 1, token: "bar_invisible"};
-				}
+
+		var barTokens = [
+			{ token: ':|]|:', type: 'bar_dbl_repeat' },
+			{ token: ':|]|', type: 'bar_right_repeat' },
+			{ token: ':||:', type: 'bar_dbl_repeat' },
+			{ token: ':|]', type: 'bar_right_repeat' },
+			{ token: '||:', type: 'bar_left_repeat' },
+			{ token: ':||', type: 'bar_right_repeat' },
+			{ token: '[|:', type: 'bar_left_repeat' },
+			{ token: '[|]', type: 'bar_invisible' },
+			{ token: '][', warn: 'Unknown Bar Symbol' },
+			{ token: ']|', type: 'bar_thick_thin' },
+			{ token: '[|', type: 'bar_thick_thin' },
+			{ token: '|]', type: 'bar_thin_thick' },
+			{ token: '||', type: 'bar_thin_thin' },
+			{ token: '::', type: 'bar_dbl_repeat' },
+			{ token: ':|', type: 'bar_right_repeat' },
+			{ token: ':', warn: 'Unknown bar symbol' },
+			{ token: '|', type: 'bar_thin' },
+			{ token: ']', type: 'bar_invisible' },
+		]
+
+		var barToken;
+		for (var j = 0; j < barTokens.length; j++) {
+			if (line.startsWith(barTokens[j].token)) {
+				barToken = barTokens[j]
+				break
+			}
+		}
+
+		if (!barToken) {
+			return { len: 0 };
+		}
+		i += barToken.token.length
+
+		if (barToken.warn) {
+			return { len: barToken.token.length, warn: barToken.warn }
+		}
+
+		switch (barToken.token) {
+			case '][':
+			case '[':
+				if ((line.charAt(i) >= '1' && line.charAt(i) <= '9') || line.charAt(i) === '"')
+					return {len: 2, token: "bar_invisible"}; // ][1-9    ]["
 				break;
-			case ':':
-				++i;
-				switch (line.charAt(i)) {
-					case ':': return {len: 2, token: "bar_dbl_repeat"};
-					case '|':	// :|
-						++i;
-						switch (line.charAt(i)) {
-							case ']':	// :|]
-								++i;
-								switch (line.charAt(i)) {
-									case '|':	// :|]|
-										++i;
-										if (line.charAt(i) === ':')  return {len: 5, token: "bar_dbl_repeat"};
-										return {len: 3, token: "bar_right_repeat"};
-									default:
-										return {len: 3, token: "bar_right_repeat"};
-								}
-								break;
-							case '|':	// :||
-								++i;
-								if (line.charAt(i) === ':')  return {len: 4, token: "bar_dbl_repeat"};
-								return {len: 3, token: "bar_right_repeat"};
-							default:
-								return {len: 2, token: "bar_right_repeat"};
-						}
-						break;
-					default:
-						return {len: 1, warn: "Unknown bar symbol"};
-				}
-				break;
-			case '[':	// [
-				++i;
-				if (line.charAt(i) === '|') {	// [|
-					++i;
-					switch (line.charAt(i)) {
-						case ':': return {len: 3, token: "bar_left_repeat"};
-						case ']': return {len: 3, token: "bar_invisible"};
-						default: return {len: 2, token: "bar_thick_thin"};
-					}
-				} else {
-					if ((line.charAt(i) >= '1' && line.charAt(i) <= '9') || line.charAt(i) === '"')
-						return {len: 1, token: "bar_invisible"};
-					return {len: 0};
-				}
-				break;
-			case '|':	// |
-				++i;
-				switch (line.charAt(i)) {
-					case ']': return {len: 2, token: "bar_thin_thick"};
-					case '|': // ||
-						++i;
-						if (line.charAt(i) === ':') return {len: 3, token: "bar_left_repeat"};
-						return {len: 2, token: "bar_thin_thin"};
-					case ':':	// |:
-						var colons = 0;
-						while (line.charAt(i+colons) === ':') colons++;
-						return { len: 1+colons, token: "bar_left_repeat"};
-					default: return {len: 1, token: "bar_thin"};
-				}
+			case '|':
+				while (line.charAt(i) === ':') barToken.token += ':'
 				break;
 		}
-		return {len: 0};
+
+		return { len: barToken.token.length, token: barToken.type }
 	};
 
 	// this returns all the characters in the string that match one of the characters in the legalChars string
