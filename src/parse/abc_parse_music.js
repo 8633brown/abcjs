@@ -9,6 +9,15 @@ var tune;
 var tuneBuilder;
 var header;
 
+var Element = function() {
+};
+
+Element.prototype.addEndBeam = function() {
+	if (this.duration !== undefined && this.duration < 0.25)
+		this.end_beam = true;
+	return this;
+}
+
 var MusicParser = function(_tokenizer, _warn, _multilineVars, _tune, _tuneBuilder, _header) {
 	tokenizer = _tokenizer;
 	warn = _warn;
@@ -90,7 +99,7 @@ var isInTie = function(multilineVars, overlayLevel, el) {
 	return false;
 };
 
-var el = { };
+var el = new Element()
 MusicParser.prototype.parseMusic = function(line) {
 	header.resolveTempo();
 	//multilineVars.havent_set_length = false;	// To late to set this now.
@@ -247,7 +256,7 @@ MusicParser.prototype.parseMusic = function(line) {
 					multilineVars.addFormattingOptions(el, tune.formatting, 'note');
 					tuneBuilder.appendElement('note', startOfLine+i, startOfLine+i+ret[0], el);
 					multilineVars.measureNotEmpty = true;
-					el = {};
+					el = new Element();
 				}
 				var bar = {type: ret[1]};
 				if (bar.type.length === 0)
@@ -291,7 +300,7 @@ MusicParser.prototype.parseMusic = function(line) {
 					multilineVars.addFormattingOptions(el, tune.formatting, 'bar');
 					tuneBuilder.appendElement('bar', startOfLine+i, startOfLine+i+ret[0], bar);
 					multilineVars.measureNotEmpty = false;
-					el = {};
+					el = new Element();
 				}
 				i += ret[0];
 			} else if (line[i] === '&') {	// backtrack to beginning of measure
@@ -339,7 +348,7 @@ MusicParser.prototype.parseMusic = function(line) {
 							i += accent[0];
 						}
 
-						var chordNote = getCoreNote(line, i, {}, false);
+						var chordNote = getCoreNote(line, i, new Element(), false);
 						if (chordNote !== null && chordNote.pitch !== undefined) {
 							if (accent[0] > 0) { // If we found a decoration above, it modifies the entire chord. "style" is handled below.
 								if (accent[1].indexOf("style=") !== 0) {
@@ -404,7 +413,7 @@ MusicParser.prototype.parseMusic = function(line) {
 									switch (line.charAt(i)) {
 										case ' ':
 										case '\t':
-											addEndBeam(el);
+											el.addEndBeam();
 											break;
 										case ')':
 											if (el.endSlur === undefined) el.endSlur = 1; else el.endSlur++;
@@ -458,13 +467,13 @@ MusicParser.prototype.parseMusic = function(line) {
 								if (chordDuration !== null) {
 									el.duration = el.duration * chordDuration;
 									if (rememberEndBeam)
-										addEndBeam(el);
+										el.addEndBeam();
 								}
 
 								multilineVars.addFormattingOptions(el, tune.formatting, 'note');
 								tuneBuilder.appendElement('note', startOfLine+startI, startOfLine+i, el);
 								multilineVars.measureNotEmpty = true;
-								el = {};
+								el = new Element();
 							}
 							done = true;
 						}
@@ -472,7 +481,7 @@ MusicParser.prototype.parseMusic = function(line) {
 
 				} else {
 					// Single pitch
-					var el2 = {};
+					var el2 = new Element();
 					var core = getCoreNote(line, i, el2, true);
 					if (el2.endTie !== undefined) setIsInTie(multilineVars,  overlayLevel, true);
 					if (core !== null) {
@@ -525,7 +534,7 @@ MusicParser.prototype.parseMusic = function(line) {
 						}
 
 						if (core.end_beam)
-							addEndBeam(el);
+							el.addEndBeam();
 
 						// If there is a whole rest, then it should be the duration of the measure, not it's own duration. We need to special case it.
 						// If the time signature length is greater than 4/4, though, then a whole rest has no special treatment.
@@ -554,7 +563,7 @@ MusicParser.prototype.parseMusic = function(line) {
 						multilineVars.addFormattingOptions(el, tune.formatting, 'note');
 						tuneBuilder.appendElement('note', startOfLine+startI, startOfLine+i, el);
 						multilineVars.measureNotEmpty = true;
-						el = {};
+						el = new Element();
 					}
 				}
 
@@ -567,7 +576,7 @@ MusicParser.prototype.parseMusic = function(line) {
 		}
 	}
 	this.lineContinuation = line.indexOf('\x12') >= 0 || (retHeader[0] > 0)
-	if (!this.lineContinuation) { el = { } }
+	if (!this.lineContinuation) { el = new Element() }
 };
 
 var setIsInTie =function(multilineVars, overlayLevel, value) {
@@ -656,7 +665,7 @@ var letter_to_grace =  function(line, i) {
 				acciaccatura = true;
 				ii++;
 			}
-			var note = getCoreNote(gra[1], ii, {}, false);
+			var note = getCoreNote(gra[1], ii, new Element(), false);
 			if (note !== null) {
 				// The grace note durations should not be affected by the default length: they should be based on 1/16, so if that isn't the default, then multiply here.
 				note.duration = note.duration / (multilineVars.default_length * 8);
@@ -1055,12 +1064,6 @@ MusicParser.prototype.startNewLine = function() {
 }
 
 // TODO-PER: make this a method in el.
-var addEndBeam = function(el) {
-	if (el.duration !== undefined && el.duration < 0.25)
-		el.end_beam = true;
-	return el;
-};
-
 var pitches = {A: 5, B: 6, C: 0, D: 1, E: 2, F: 3, G: 4, a: 12, b: 13, c: 7, d: 8, e: 9, f: 10, g: 11};
 var rests = {x: 'invisible', X: 'invisible-multimeasure', y: 'spacer', z: 'rest', Z: 'multimeasure' };
 var getCoreNote = function(line, index, el, canHaveBrokenRhythm) {
@@ -1208,7 +1211,7 @@ var getCoreNote = function(line, index, el, canHaveBrokenRhythm) {
 						if (line.charAt(fraction.index) === '-')
 							el.startTie = {};
 						else
-							el = addEndBeam(el);
+							el = el.addEndBeam();
 						fraction.index++;
 					}
 					index = fraction.index-1;
@@ -1237,7 +1240,7 @@ var getCoreNote = function(line, index, el, canHaveBrokenRhythm) {
 					else {
 						// Peek ahead to the next character. If it is a space, then we have an end beam.
 						if (tokenizer.isWhiteSpace(line.charAt(index + 1)))
-							addEndBeam(el);
+							el.addEndBeam();
 						el.endChar = index+1;
 						return el;
 					}
