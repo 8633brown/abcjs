@@ -87,7 +87,7 @@ var MusicParser = function(_tokenizer, _warn, _multilineVars, _tune, _tuneBuilde
 // back-tick, space, tab: space
 var nonDecorations = "ABCDEFGabcdefgxyzZ[]|^_{";	// use this to prescreen so we don't have to look for a decoration at every note.
 
-var isInTie = function(multilineVars, overlayLevel, el) {
+MusicParser.prototype.isInTie = function(overlayLevel, el) {
 	if (multilineVars.inTie[overlayLevel] === undefined)
 		return false;
 	// If this is single voice music then the voice index isn't set, so we use the first voice.
@@ -396,7 +396,7 @@ MusicParser.prototype.parseMusic = function(line) {
 									multilineVars.next_note_duration = 0;
 								}
 
-								if (isInTie(multilineVars,  overlayLevel, el)) {
+								if (this.isInTie(overlayLevel, el)) {
 									parseCommon.each(el.pitches, function(pitch) { pitch.endTie = true; });
 									setIsInTie(multilineVars,  overlayLevel, false);
 								}
@@ -514,7 +514,7 @@ MusicParser.prototype.parseMusic = function(line) {
 						if (core.graceNotes !== undefined) el.graceNotes = core.graceNotes;
 						delete el.startSlur;
 						delete el.dottedSlur;
-						if (isInTie(multilineVars,  overlayLevel, el)) {
+						if (this.isInTie(overlayLevel, el)) {
 							if (el.pitches !== undefined) {
 								el.pitches[0].endTie = true;
 							} else if (el.rest.type !== 'spacer') {
