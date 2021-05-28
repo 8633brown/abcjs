@@ -406,7 +406,7 @@ MusicParser.prototype.parseMusic = function(line) {
 
 					if (this.isInTie(overlayLevel, el)) {
 						parseCommon.each(el.pitches, function(pitch) { pitch.endTie = true; });
-						setIsInTie(multilineVars,  overlayLevel, false);
+						this.setInTie(overlayLevel, false);
 					}
 
 					if (tripletNotesLeft > 0 && !(el.rest && el.rest.type === "spacer")) {
@@ -428,7 +428,7 @@ MusicParser.prototype.parseMusic = function(line) {
 								break;
 							case '-':
 								parseCommon.each(el.pitches, function(pitch) { pitch.startTie = {}; });
-								setIsInTie(multilineVars,  overlayLevel, true);
+								this.setInTie(overlayLevel, true);
 								break;
 							case '>':
 							case '<':
@@ -491,7 +491,7 @@ MusicParser.prototype.parseMusic = function(line) {
 		// Single pitch
 		var el2 = new Element();
 		var core = getCoreNote(line, i, el2, true);
-		if (el2.endTie !== undefined) setIsInTie(multilineVars, overlayLevel, true);
+		if (el2.endTie !== undefined) this.setInTie(overlayLevel, true);
 		if (core !== null) {
 			if (core.pitch !== undefined) {
 				el.pitches = [ { } ];
@@ -528,10 +528,10 @@ MusicParser.prototype.parseMusic = function(line) {
 				} else if (el.rest.type !== 'spacer') {
 					el.rest.endTie = true;
 				}
-				setIsInTie(multilineVars,  overlayLevel, false);
+				this.setInTie(overlayLevel, false);
 			}
 			if (core.startTie || el.startTie)
-				setIsInTie(multilineVars,  overlayLevel, true);
+				this.setInTie(overlayLevel, true);
 			i = core.endChar;
 
 			if (tripletNotesLeft > 0 && !(core.rest && core.rest.type === "spacer")) {
@@ -584,7 +584,7 @@ MusicParser.prototype.parseMusic = function(line) {
 	if (!this.lineContinuation) { el = new Element() }
 };
 
-var setIsInTie =function(multilineVars, overlayLevel, value) {
+MusicParser.prototype.setInTie = function(overlayLevel, value) {
 	// If this is single voice music then the voice index isn't set, so we use the first voice.
 	var voiceIndex = multilineVars.currentVoice ? multilineVars.currentVoice.index : 0;
 	if (multilineVars.inTie[overlayLevel] === undefined)
